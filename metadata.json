@@ -1,0 +1,8 @@
+{
+  "name": "InteriorAI - 3D Room Redesign",
+  "description": "An AI-powered interior design assistant that redesigns your room in 3D and various styles, providing expert suggestions and renders. Supports photo and video uploads.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
