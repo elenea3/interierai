@@ -14,28 +14,30 @@ const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 export const redesignRoom = async (base64Images: string[], style: DesignStyle, customPrompt?: string): Promise<DesignResult> => {
   const ai = getAI();
   
-  const imageParts = base64Images.map(b64 => ({
+  // ვამზადებთ ფოტოებს და ტექსტურ ინსტრუქციას ერთიანი კონტენტისთვის
+  const parts: any[] = base64Images.map(b64 => ({
     inlineData: {
       data: b64,
       mimeType: 'image/jpeg',
     },
   }));
 
-  const systemInstruction = `You are an expert Interior Designer. Your task is to redesign the room shown in the provided photo using the ${style} style. 
-Additional requirements: ${customPrompt || 'Make it look professional and aesthetically pleasing.'}
-OUTPUT RULES:
-1. You MUST generate a high-quality, photorealistic image of the redesigned room.
-2. You MUST provide a short description of your design choices strictly in Georgian (ქართულად).
-3. Do not include any technical explanations or meta-talk.`;
+  // ტექსტური მოთხოვნა, რომელიც აიძულებს მოდელს ახალი სურათის გენერირებას
+  parts.push({
+    text: `RE-DESIGN THIS ROOM. 
+    Style: ${style}. 
+    Additional Instructions: ${customPrompt || 'Professional, high-end interior design.'}
+    
+    TASK: Generate a NEW photorealistic high-resolution image showing this room completely redesigned. 
+    Also, provide a short description of the changes in GEORGIAN (ქართულად).`
+  });
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image', 
-      contents: {
-        parts: imageParts,
-      },
+      contents: [{ parts }],
       config: {
-        systemInstruction: systemInstruction,
+        systemInstruction: "You are a professional interior design AI. You transform room photos into high-quality 3D renders based on specific styles. Always provide an image and a brief Georgian description.",
         imageConfig: {
           aspectRatio: "16:9"
         },
@@ -45,10 +47,8 @@ OUTPUT RULES:
     let imageUrl = "";
     let designPhilosophy = "";
 
-    // Iterate through all parts to find the image and the text description
-    const candidate = response.candidates?.[0];
-    if (candidate?.content?.parts) {
-      for (const part of candidate.content.parts) {
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
         if (part.inlineData) {
           imageUrl = `data:image/png;base64,${part.inlineData.data}`;
         } else if (part.text) {
@@ -58,16 +58,20 @@ OUTPUT RULES:
     }
 
     if (!imageUrl) {
-      throw new Error("AI-მ ვერ შეძლო სურათის გენერირება. სცადეთ სხვა ფოტო.");
+      // თუ სურათი არ მოვიდა, შესაძლოა უსაფრთხოების ფილტრმა დაბლოკა ან მოდელმა მხოლოდ ტექსტი დააბრუნა
+      throw new Error("AI-მ ვერ შექმნა სურათი. სცადეთ სხვა ფოტო ან შეცვალეთ მოთხოვნა.");
     }
 
     return {
       imageUrl,
-      materials: ["ნატურალური მასალები", "ინტერიერის განათება", "პრემიუმ ტექსტურები"],
-      designPhilosophy: designPhilosophy || "თანამედროვე დიზაინისა და ფუნქციონალურობის ბალანსი."
+      materials: ["პრემიუმ მასალები", "ინტეგრირებული განათება", "ეკომეგობრული ტექსტურები"],
+      designPhilosophy: designPhilosophy || "თქვენი სივრცის ახალი, გაუმჯობესებული ხედვა."
     };
   } catch (error: any) {
     console.error("Redesign error:", error);
+    if (error.message?.includes("safety")) {
+      throw new Error("ფოტო ვერ დამუშავდა უსაფრთხოების ფილტრის გამო. გთხოვთ ატვირთოთ სხვა ფოტო.");
+    }
     throw error;
   }
 };
@@ -84,12 +88,12 @@ export const getImprovements = async (base64Images: string[]): Promise<{ questio
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: {
+      contents: [{
         parts: [
           ...imageParts,
-          { text: "გააანალიზე ეს ოთახი და მომეცი 3 დიზაინერული რჩევა ქართულად. პასუხი დააბრუნე JSON ფორმატში keys: 'questions' (array), 'analysis' (string)." },
+          { text: "Analyze this room and give 3 interior design tips in Georgian. Return as JSON with keys 'questions' (array) and 'analysis' (string)." },
         ],
-      },
+      }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -105,10 +109,9 @@ export const getImprovements = async (base64Images: string[]): Promise<{ questio
 
     return JSON.parse(response.text?.trim() || "{}");
   } catch (e) {
-    console.error("Analysis failure", e);
     return {
-      questions: ["რა ფერები მოგწონთ?", "რა არის ოთახის დანიშნულება?", "განათებაზე რა აზრის ხართ?"],
-      analysis: "ანალიზი ამჟამად მიუწვდომელია."
+      questions: ["როგორი ფერები მოგწონთ?", "რა არის ოთახის მთავარი დანიშნულება?", "განათებაზე რა აზრის ხართ?"],
+      analysis: "ანალიზი დროებით მიუწვდომელია."
     };
   }
 };

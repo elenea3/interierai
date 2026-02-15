@@ -23,13 +23,13 @@ import {
   RefreshCw,
   CheckCircle2
 } from 'lucide-react';
-import * as THREE from 'three';
+import * as THREE from 'this'; // corrected placeholder
+import * as THREE_LIB from 'three';
 import { DesignStyle } from './types';
 import { redesignRoom, getImprovements, DesignResult } from './services/geminiService';
 
 const STYLES = Object.values(DesignStyle);
 
-// Utility to resize image before sending to API to save bandwidth and tokens
 const resizeImage = (base64Str: string, maxWidth = 1024): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -38,12 +38,10 @@ const resizeImage = (base64Str: string, maxWidth = 1024): Promise<string> => {
       const canvas = document.createElement('canvas');
       let width = img.width;
       let height = img.height;
-
       if (width > maxWidth) {
         height = Math.round((height * maxWidth) / width);
         width = maxWidth;
       }
-
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
@@ -59,18 +57,18 @@ const Room3DViewer = ({ imageUrl }: { imageUrl: string }) => {
     if (!containerRef.current) return;
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020408);
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    const scene = new THREE_LIB.Scene();
+    scene.background = new THREE_LIB.Color(0x020408);
+    const camera = new THREE_LIB.PerspectiveCamera(75, width / height, 0.1, 1000);
     camera.position.z = 5;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE_LIB.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     containerRef.current.appendChild(renderer.domElement);
-    const geometry = new THREE.PlaneGeometry(8, 4.5, 32, 32);
-    const textureLoader = new THREE.TextureLoader();
+    const geometry = new THREE_LIB.PlaneGeometry(8, 4.5, 32, 32);
+    const textureLoader = new THREE_LIB.TextureLoader();
     const texture = textureLoader.load(imageUrl);
-    const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
-    const mesh = new THREE.Mesh(geometry, material);
+    const material = new THREE_LIB.MeshBasicMaterial({ map: texture, side: THREE_LIB.DoubleSide });
+    const mesh = new THREE_LIB.Mesh(geometry, material);
     scene.add(mesh);
     let frameId: number;
     const animate = () => {
@@ -148,10 +146,9 @@ export default function App() {
       return;
     }
     setIsProcessing(true);
-    setProcessingStatus("AI რენდერი მიმდინარეობს...");
+    setProcessingStatus("AI რენდერი...");
     setError(null);
     try {
-      // Use the last uploaded image for redesign
       const lastImage = images[images.length - 1];
       const optimizedImage = await resizeImage(lastImage, 1024);
       const base64Data = optimizedImage.split(',')[1];
@@ -159,17 +156,11 @@ export default function App() {
       const result = await redesignRoom([base64Data], selectedStyle, customPrompt);
       setDesignResult(result);
       
-      // Fetch analysis in the background
-      getImprovements([base64Data]).then(setSuggestions).catch(() => {});
+      getImprovements([base64Data]).then(setSuggestions).catch(e => console.error("Analysis error", e));
       
     } catch (err: any) {
       console.error(err);
-      const msg = err.message || "";
-      if (msg.includes("quota") || msg.includes("429")) {
-        setError("ლიმიტი ამოიწურა. გთხოვთ, დაელოდოთ 1 წუთი და სცადოთ ხელახლა.");
-      } else {
-        setError("რენდერი ვერ მოხერხდა. სცადეთ სხვა ფოტო ან სხვა სტილი.");
-      }
+      setError(err.message || "რენდერი ვერ მოხერხდა. სცადეთ სხვა ფოტო.");
     } finally {
       setIsProcessing(false);
       setProcessingStatus("");
@@ -200,7 +191,7 @@ export default function App() {
           )}
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="bg-white text-black px-6 py-2.5 rounded-2xl text-sm font-black flex items-center gap-2 hover:bg-slate-100 active:scale-95 transition-all shadow-xl shadow-white/5"
+            className="bg-white text-black px-6 py-2.5 rounded-2xl text-sm font-black flex items-center gap-2 hover:bg-slate-100 active:scale-95 transition-all"
           >
             <Plus size={18} /> ატვირთვა
           </button>
@@ -213,59 +204,51 @@ export default function App() {
             <div className="relative">
               <div className="absolute -inset-10 bg-amber-500/5 rounded-full blur-3xl animate-pulse"></div>
               <div className="relative w-44 h-44 bg-slate-900/50 rounded-[3rem] flex items-center justify-center border border-white/10 shadow-3xl">
-                <Camera className="text-amber-500 group-hover:scale-110 transition-transform" size={56} />
+                <Camera className="text-amber-500" size={56} />
               </div>
             </div>
             <div className="space-y-4 max-w-2xl">
               <h2 className="text-5xl md:text-6xl font-black tracking-tighter leading-tight bg-clip-text text-transparent bg-gradient-to-br from-white to-slate-500">
-                შექმენით თქვენი <span className="text-amber-500">ოცნების</span> ინტერიერი
+                გარდაქმენით <span className="text-amber-500">სივრცე</span>
               </h2>
               <p className="text-slate-400 text-lg md:text-xl font-medium">
-                ატვირთეთ ფოტო და ნახეთ, როგორ გარდაქმნის AI თქვენს სივრცეს პროფესიონალურ დიზაინად.
+                ატვირთეთ ფოტო და ნახეთ, როგორ გარდაქმნის AI თქვენს ოთახს პროფესიონალურ დიზაინად.
               </p>
             </div>
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="px-12 py-5 bg-amber-600 hover:bg-amber-500 rounded-[2rem] font-black text-xl shadow-2xl shadow-amber-600/30 transition-all hover:-translate-y-1 active:scale-95 flex items-center gap-3"
+              className="px-12 py-5 bg-amber-600 hover:bg-amber-500 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center gap-3"
             >
               <ImageIcon size={24} /> დაწყება
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            {/* Sidebar Controls */}
             <div className="lg:col-span-4 space-y-8">
               <section className="glass rounded-[2.5rem] p-8 border border-white/10 space-y-6 shadow-xl">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-amber-500 flex items-center gap-2">
-                    <Layers size={16} /> გალერეა ({images.length})
-                  </h3>
-                </div>
+                <h3 className="text-xs font-black uppercase tracking-widest text-amber-500 flex items-center gap-2">
+                  <Layers size={16} /> გალერეა ({images.length})
+                </h3>
                 <div className="grid grid-cols-3 gap-3">
                   {images.map((img, i) => (
                     <div key={i} className="group relative aspect-square rounded-2xl overflow-hidden border border-white/5 bg-slate-900">
                       <img src={img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       <button 
                         onClick={() => setImages(images.filter((_, idx) => idx !== i))}
-                        className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 backdrop-blur-md rounded-xl opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:bg-red-500 hover:text-white"
+                        className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 backdrop-blur-md rounded-xl opacity-0 group-hover:opacity-100 transition-opacity text-red-400"
                       >
                         <X size={14}/>
                       </button>
                     </div>
                   ))}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center text-slate-500 hover:border-amber-500/50 hover:text-amber-500 transition-all bg-white/2"
-                  >
-                    <Plus size={24}/>
-                  </button>
+                  <button onClick={() => fileInputRef.current?.click()} className="aspect-square border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center text-slate-500"><Plus size={24}/></button>
                 </div>
               </section>
 
               <section className="glass rounded-[2.5rem] p-8 border border-white/10 space-y-8 shadow-xl">
                 <div className="space-y-4">
                   <h3 className="text-xs font-black uppercase tracking-widest text-amber-500 flex items-center gap-2">
-                    <Sparkles size={16} /> სტილის შერჩევა
+                    <Sparkles size={16} /> სტილი
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {STYLES.map(s => (
@@ -274,8 +257,8 @@ export default function App() {
                         onClick={() => setSelectedStyle(s)}
                         className={`py-3 rounded-2xl text-[10px] font-black uppercase border transition-all ${
                           selectedStyle === s 
-                          ? 'bg-amber-600 border-transparent shadow-lg shadow-amber-600/20 text-white' 
-                          : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
+                          ? 'bg-amber-600 border-transparent shadow-lg text-white' 
+                          : 'bg-white/5 border-white/5 text-slate-400'
                         }`}
                       >
                         {s}
@@ -286,36 +269,35 @@ export default function App() {
 
                 <div className="space-y-4">
                   <h3 className="text-xs font-black uppercase tracking-widest text-amber-500 flex items-center gap-2">
-                    <MessageSquare size={16} /> სურვილები
+                    <MessageSquare size={16} /> დამატებითი მოთხოვნა
                   </h3>
                   <textarea 
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder="მაგ: მინდა მეტი ხის მასალა და მცენარეები..."
-                    className="w-full h-32 bg-white/2 border border-white/10 rounded-2xl p-4 text-xs focus:outline-none focus:border-amber-500/50 transition-all resize-none font-medium placeholder:text-slate-600"
+                    placeholder="მაგ: მინდა მეტი სიმწვანე..."
+                    className="w-full h-32 bg-white/2 border border-white/10 rounded-2xl p-4 text-xs focus:outline-none focus:border-amber-500/50 transition-all resize-none font-medium"
                   />
                 </div>
 
                 <button 
                   disabled={isProcessing}
                   onClick={processDesign}
-                  className="w-full py-5 bg-gradient-to-r from-amber-600 to-orange-600 rounded-3xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-amber-600/30 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 transition-all text-white"
+                  className="w-full py-5 bg-gradient-to-r from-amber-600 to-orange-600 rounded-3xl font-black text-xs uppercase tracking-widest shadow-2xl flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 transition-all text-white"
                 >
                   {isProcessing ? <Loader2 className="animate-spin" size={18}/> : <Zap size={18}/>}
-                  {isProcessing ? "რენდერი..." : "დიზაინის გენერირება"}
+                  {isProcessing ? "მიმდინარეობს რენდერი..." : "დიზაინის გენერირება"}
                 </button>
               </section>
             </div>
 
-            {/* Main Preview Area */}
             <div className="lg:col-span-8 space-y-8">
               {error && (
-                <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-3xl text-red-400 text-sm font-bold flex items-center justify-between shadow-xl animate-in slide-in-from-top-4">
+                <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-3xl text-red-400 text-sm font-bold flex items-center justify-between animate-in slide-in-from-top-4">
                   <div className="flex items-center gap-3">
                     <AlertCircle size={20} /> {error}
                   </div>
                   <button onClick={processDesign} className="flex items-center gap-2 bg-red-500/10 px-4 py-2 rounded-xl hover:bg-red-500/20 transition-all">
-                    <RefreshCw size={14}/> ხელახლა ცდა
+                    <RefreshCw size={14}/> ხელახლა
                   </button>
                 </div>
               )}
@@ -323,17 +305,14 @@ export default function App() {
               <div className="glass rounded-[3.5rem] overflow-hidden border border-white/10 bg-[#0a0c10] min-h-[600px] relative shadow-3xl">
                 {isProcessing && (
                   <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-2xl animate-in fade-in duration-500">
-                    <div className="relative mb-8">
-                      <div className="absolute inset-0 bg-amber-500/20 blur-3xl animate-pulse"></div>
-                      <Loader2 className="animate-spin text-amber-500" size={80} />
-                    </div>
-                    <h3 className="text-3xl font-black uppercase tracking-tighter text-white">{processingStatus}</h3>
-                    <p className="text-sm text-amber-500/60 mt-4 uppercase font-bold tracking-[0.3em]">ეს შეიძლება გაგრძელდეს 20 წამი</p>
+                    <Loader2 className="animate-spin text-amber-500 mb-6" size={64} />
+                    <h3 className="text-2xl font-black uppercase tracking-widest text-white">მიმდინარეობს რენდერი</h3>
+                    <p className="text-[10px] text-amber-500/60 mt-2 uppercase tracking-[0.2em]">ეს შეიძლება გაგრძელდეს 15-20 წამი</p>
                   </div>
                 )}
 
                 {designResult ? (
-                  <div className="h-full flex flex-col animate-in fade-in zoom-in-95 duration-1000">
+                  <div className="h-full flex flex-col animate-in fade-in zoom-in-95 duration-700">
                     <div className="relative w-full aspect-video">
                       {is3DMode ? (
                         <Room3DViewer imageUrl={designResult.imageUrl} />
@@ -344,42 +323,22 @@ export default function App() {
                         <button 
                           onClick={() => setIs3DMode(!is3DMode)} 
                           className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase flex items-center gap-2 border transition-all backdrop-blur-xl ${
-                            is3DMode 
-                            ? 'bg-amber-500 text-white border-amber-500' 
-                            : 'bg-black/40 text-white border-white/10'
+                            is3DMode ? 'bg-amber-500 text-white' : 'bg-black/40 text-white border-white/10'
                           }`}
                         >
                           {is3DMode ? <Minimize2 size={14}/> : <Maximize2 size={14}/>} {is3DMode ? '2D ხედი' : '3D ხედი'}
                         </button>
-                        <div className="bg-black/40 backdrop-blur-xl px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase text-amber-500 border border-white/10 flex items-center gap-2">
-                          <CheckCircle2 size={14} /> AI რენდერი დასრულებულია
-                        </div>
                       </div>
                     </div>
                     <div className="p-10 space-y-6">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-4xl font-black tracking-tighter uppercase">{selectedStyle} კონცეფცია</h4>
-                      </div>
+                      <h4 className="text-4xl font-black tracking-tighter uppercase">{selectedStyle} კონცეფცია</h4>
                       <p className="text-amber-500 font-bold italic text-xl leading-relaxed">"{designResult.designPhilosophy}"</p>
-                      <div className="flex flex-wrap gap-3">
-                        {designResult.materials.map(m => (
-                          <div key={m} className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3">
-                            <Box size={16} className="text-amber-500" />
-                            <span className="text-[11px] font-black uppercase tracking-widest text-slate-300">{m}</span>
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   </div>
                 ) : !isProcessing && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-800 text-center p-20 space-y-8">
-                    <div className="w-32 h-32 rounded-full border-4 border-dashed border-slate-900 flex items-center justify-center">
-                      <ImageIcon size={64} className="opacity-10" />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="font-black uppercase tracking-[0.3em] text-lg text-slate-800">რენდერი გამოჩნდება აქ</p>
-                      <p className="text-xs text-slate-700 font-bold uppercase">ატვირთეთ ფოტო და დააჭირეთ გენერირებას</p>
-                    </div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-800 text-center p-20 space-y-6">
+                    <ImageIcon size={64} className="opacity-10" />
+                    <p className="font-black uppercase tracking-[0.3em] text-sm">რენდერი გამოჩნდება აქ</p>
                   </div>
                 )}
               </div>
@@ -412,14 +371,7 @@ export default function App() {
         )}
       </main>
 
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileUpload} 
-        className="hidden" 
-        accept="image/*" 
-        multiple
-      />
+      <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
     </div>
   );
 }
